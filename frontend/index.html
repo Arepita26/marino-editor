@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+  <!-- SEO Primario -->
+  <title>Marino Editor — Suite de Video Automatizada</title>
+  <meta name="description" content="Suite automatizada de producción y edición de video vertical 1080x1920 para La TV Calle y DDHH con Marino Alvarado." />
+  <meta name="keywords" content="Marino Alvarado, DDHH, La TV Calle, Provea, 90 segundos, editor de video, vertical, Reels, TikTok" />
+  <meta name="author" content="La TV Calle & Provea" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://marino-editor.vercel.app/" />
+
+  <!-- PWA & Mobile Web App -->
+  <meta name="theme-color" content="#09090B" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Marino 90s" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230066FF'/><text x='50' y='64' font-size='38' font-weight='bold' fill='white' text-anchor='middle'>90s</text></svg>" />
+
+  <!-- Estilos del Sistema de Diseño Premium -->
+  <link rel="stylesheet" href="src/styles/index.css" />
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Encabezado con Icono y Selector de Tema (Solo Sol / Luna) -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo-box" aria-hidden="true">
+          90s
+        </div>
+        <div class="brand-info">
+          <h1>Marino Editor</h1>
+          <p>Suite de Video Automatizada</p>
+        </div>
+      </div>
+      <button class="theme-icon-btn" id="btn-theme-toggle" type="button" aria-label="Cambiar tema visual" title="Cambiar tema">
+        <span id="theme-icon">☀️</span>
+      </button>
+    </header>
+
+    <main id="main-content">
+      <!-- FORMULARIO DE ENSAMBLAJE -->
+      <div id="view-form">
+        <!-- TARJETA: VIDEO DE NOTICIA -->
+        <section class="suite-card">
+          <span class="section-meta-label">VIDEO DE NOTICIA</span>
+
+          <!-- Input oculto para cámara o galería -->
+          <input
+            type="file"
+            id="file-input-video"
+            accept="video/*"
+            style="display: none;"
+          />
+
+          <!-- Zona Dropzone con textos solicitados -->
+          <div class="dropzone-container" id="dropzone-box" role="button" tabindex="0">
+            <div class="dropzone-icon-box">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="3" />
+                <path d="m10 9 5 3-5 3V9z" fill="currentColor" />
+                <path d="M7 3v18" />
+                <path d="M17 3v18" />
+              </svg>
+            </div>
+            <div class="dropzone-title">Toca para abrir la galería</div>
+            <div class="dropzone-subtitle">Formatos MP4 o MOV — hasta 500 MB</div>
+          </div>
+
+          <!-- Ficha de clip seleccionado -->
+          <div class="loaded-clip-card" id="clip-loaded-card" style="display: none;">
+            <div class="loaded-clip-left">
+              <span class="clip-badge-tag" id="clip-size-tag">0.0 MB</span>
+              <span class="clip-filename" id="clip-filename-text">video.mp4</span>
+            </div>
+            <button type="button" class="clip-remove-btn" id="btn-remove-clip">Cambiar</button>
+          </div>
+        </section>
+
+        <!-- BOTÓN PRINCIPAL PROCESAR -->
+        <button type="button" class="btn-primary-action" id="btn-process-action" disabled>
+          <span>Procesar Video</span>
+        </button>
+      </div>
+
+      <!-- VISTA 2: PROGRESO EN TIEMPO REAL -->
+      <section class="suite-card progress-box" id="view-progress" style="display: none;">
+        <span class="section-meta-label">PROCESANDO VIDEO</span>
+        <div style="font-size: 30px; margin: 10px 0;">
+          <span class="spin-icon">⚙️</span>
+        </div>
+        <h3 style="font-size: 17px; font-weight: 700; margin-bottom: 6px;">
+          Uniendo con la intro oficial de Marino Alvarado...
+        </h3>
+
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill-bar" style="width: 0%;"></div>
+        </div>
+
+        <div class="progress-stats-row">
+          <span id="progress-percent-label">0%</span>
+          <span id="progress-bytes-label">0.0 MB / 0.0 MB</span>
+        </div>
+
+        <p class="live-step-message" id="progress-live-message">
+          Se está procesando correctamente...
+        </p>
+
+        <!-- Botón Cancelar -->
+        <div>
+          <button type="button" class="btn-cancel-action" id="btn-cancel-processing">
+            Cancelar
+          </button>
+        </div>
+      </section>
+
+      <!-- VISTA 3: RESULTADO FINAL (REPRODUCTOR VERTICAL NATIVO 9:16) -->
+      <section class="suite-card" id="view-result" style="display: none; text-align: center;">
+        <div class="success-tag">
+          <span>VIDEO ENSAMBLADO CON ÉXITO</span>
+        </div>
+
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+          90 Segundos con Marino Alvarado
+        </h3>
+
+        <!-- Marco vertical 9:16 que elimina cualquier barra negra horizontal -->
+        <div class="vertical-video-wrapper">
+          <video id="final-video-player" controls playsinline preload="metadata"></video>
+        </div>
+
+        <!-- Botones de Acción (Sin Emojis, Colores Precisos) -->
+        <div class="action-buttons-stack">
+          <!-- Botón 1: Descargar en AZUL -->
+          <button type="button" class="btn-download-blue" id="btn-download-file">
+            Descargar Video
+          </button>
+
+          <!-- Botón 2: Compartir en VERDE WHATSAPP -->
+          <button type="button" class="btn-whatsapp-solid" id="btn-share-whatsapp">
+            Compartir en WhatsApp
+          </button>
+
+          <!-- Botón 3: Procesar otro video -->
+          <button type="button" class="btn-ghost-secondary" id="btn-process-another">
+            Procesar otro video
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer Simplificado con Versión -->
+    <footer class="app-footer">
+      <p>Marino Editor — Suite de Video Automatizada v1.0.0</p>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      // 1. TEMA VISUAL (MODO OSCURO / CLARO - SOLO ICONO SOL/LUNA)
+      const THEME_KEY = "marino_suite_theme";
+      const htmlEl = document.documentElement;
+      const btnTheme = document.getElementById("btn-theme-toggle");
+      const themeIcon = document.getElementById("theme-icon");
+
+      function setAppTheme(theme) {
+        htmlEl.setAttribute("data-theme", theme);
+        localStorage.setItem(THEME_KEY, theme);
+        const isDark = theme === "dark";
+        themeIcon.textContent = isDark ? "☀️" : "🌙";
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", isDark ? "#09090B" : "#F4F4F6");
+      }
+
+      const initialTheme = localStorage.getItem(THEME_KEY) || "dark";
+      setAppTheme(initialTheme);
+
+      btnTheme.addEventListener("click", () => {
+        const current = htmlEl.getAttribute("data-theme") || "dark";
+        setAppTheme(current === "dark" ? "light" : "dark");
+      });
+
+      // 2. ELEMENTOS
+      const viewForm = document.getElementById("view-form");
+      const viewProgress = document.getElementById("view-progress");
+      const viewResult = document.getElementById("view-result");
+
+      const fileInput = document.getElementById("file-input-video");
+      const dropzone = document.getElementById("dropzone-box");
+      const clipLoadedCard = document.getElementById("clip-loaded-card");
+      const clipFilenameText = document.getElementById("clip-filename-text");
+      const clipSizeTag = document.getElementById("clip-size-tag");
+      const btnRemoveClip = document.getElementById("btn-remove-clip");
+      const btnProcessAction = document.getElementById("btn-process-action");
+
+      const progressFillBar = document.getElementById("progress-fill-bar");
+      const progressPercentLabel = document.getElementById("progress-percent-label");
+      const progressBytesLabel = document.getElementById("progress-bytes-label");
+      const progressLiveMessage = document.getElementById("progress-live-message");
+
+      const finalVideoPlayer = document.getElementById("final-video-player");
+      const btnDownloadFile = document.getElementById("btn-download-file");
+      const btnShareWhatsapp = document.getElementById("btn-share-whatsapp");
+      const btnProcessAnother = document.getElementById("btn-process-another");
+
+      let currentFile = null;
+      let currentFileUrl = "";
+      let processedDownloadUrl = "";
+      const INTRO_URL = "public/intro_marino.mp4";
+      const DEFAULT_HF_BACKEND = "https://erickrosas-marino-editor-api.hf.space";
+      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      const urlBackendParam = new URLSearchParams(window.location.search).get("backend");
+      if (urlBackendParam) {
+        try { localStorage.setItem("marino_backend_url", urlBackendParam); } catch(e) {}
+      }
+      const BACKEND_URL = localStorage.getItem("marino_backend_url") || (isLocalhost ? "http://127.0.0.1:7860" : DEFAULT_HF_BACKEND);
+
+      // 3. SELECCIÓN DE VIDEO
+      dropzone.addEventListener("click", () => fileInput.click());
+
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.classList.add("drag-over");
+      });
+
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("drag-over");
+      });
+
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("drag-over");
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          handleFile(e.target.files[0]);
+        }
+      });
+
+      function handleFile(file) {
+        if (!file.type.startsWith("video/") && !file.name.match(/\.(mp4|mov|m4v|webm|avi|mkv)$/i)) {
+          alert("Por favor selecciona un archivo de video válido (MP4, MOV, M4V, etc.)");
+          return;
+        }
+
+        const sizeMB = file.size / (1024 * 1024);
+        if (sizeMB > 500) {
+          alert(`El video pesa ${sizeMB.toFixed(1)} MB. El límite máximo permitido es de 500 MB.`);
+          return;
+        }
+
+        currentFile = file;
+        currentFileUrl = URL.createObjectURL(file);
+
+        clipFilenameText.textContent = file.name;
+        clipSizeTag.textContent = sizeMB.toFixed(1) + " MB";
+
+        dropzone.style.display = "none";
+        clipLoadedCard.style.display = "flex";
+        btnProcessAction.disabled = false;
+      }
+
+      btnRemoveClip.addEventListener("click", () => {
+        currentFile = null;
+        currentFileUrl = "";
+        fileInput.value = "";
+        clipLoadedCard.style.display = "none";
+        dropzone.style.display = "flex";
+        btnProcessAction.disabled = true;
+      });
+
+      // Permite cargar muestra automáticamente para pruebas con ?sample=1
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("sample") === "1" || urlParams.get("test") === "1") {
+        fetch("/intro_marino.mp4")
+          .then(r => r.blob())
+          .then(blob => {
+            const sampleFile = new File([blob], "noticia_test.mp4", { type: "video/mp4" });
+            handleFile(sampleFile);
+          })
+          .catch(e => console.log("Error cargando muestra:", e));
+      }
+
+      // 4. ROTADOR DINÁMICO DE FRASES DE PROGRESO
+      const PROGRESS_PHRASES = [
+        "Iniciando procesamiento de video...",
+        "El video se está procesando correctamente...",
+        "Normalizando resolución a vertical 1080x1920...",
+        "Nivelando y ecualizando audio con estándar EBU R128...",
+        "¡Ya falta poco, ensamblando con la intro oficial!...",
+        "Generando archivo final en alta resolución..."
+      ];
+      let phraseTimer = null;
+      let phraseIdx = 0;
+
+      function updateProgressMessage(text) {
+        progressLiveMessage.style.opacity = "0";
+        setTimeout(() => {
+          progressLiveMessage.textContent = text;
+          progressLiveMessage.style.opacity = "1";
+        }, 150);
+      }
+
+      function startStatusPhraseRotation() {
+        phraseIdx = 0;
+        progressLiveMessage.style.opacity = "1";
+        progressLiveMessage.textContent = PROGRESS_PHRASES[0];
+        if (phraseTimer) clearInterval(phraseTimer);
+        phraseTimer = setInterval(() => {
+          phraseIdx = (phraseIdx + 1) % PROGRESS_PHRASES.length;
+          updateProgressMessage(PROGRESS_PHRASES[phraseIdx]);
+        }, 2800);
+      }
+
+      function stopStatusPhraseRotation(finalMsg) {
+        if (phraseTimer) {
+          clearInterval(phraseTimer);
+          phraseTimer = null;
+        }
+        progressLiveMessage.style.opacity = "1";
+        if (finalMsg) {
+          progressLiveMessage.textContent = finalMsg;
+        }
+      }
+
+      let currentXhr = null;
+      let currentPollTimer = null;
+      let currentTicketId = null;
+
+      // Botón Cancelar Procesamiento
+      const btnCancelProcessing = document.getElementById("btn-cancel-processing");
+      btnCancelProcessing.addEventListener("click", () => {
+        // 1. Abortar subida HTTP si está en curso
+        if (currentXhr) {
+          try { currentXhr.abort(); } catch(e) {}
+          currentXhr = null;
+        }
+
+        // 2. Detener sondeo del servidor
+        if (currentPollTimer) {
+          clearInterval(currentPollTimer);
+          currentPollTimer = null;
+        }
+
+        // 3. Notificar al backend para que cancele FFmpeg de inmediato
+        if (currentTicketId) {
+          fetch(`${BACKEND_URL}/api/cancelar/${currentTicketId}`, { method: "POST" }).catch(() => {});
+          currentTicketId = null;
+        }
+
+        // 4. Detener rotación de frases y regresar a la vista de selección
+        stopStatusPhraseRotation();
+        viewProgress.style.display = "none";
+        viewForm.style.display = "block";
+        progressFillBar.style.width = "0%";
+        progressPercentLabel.textContent = "0%";
+      });
+
+      // 5. PROCESAMIENTO
+      btnProcessAction.addEventListener("click", async () => {
+        if (!currentFile) return;
+
+        viewForm.style.display = "none";
+        viewProgress.style.display = "block";
+        viewResult.style.display = "none";
+
+        progressFillBar.style.width = "0%";
+        progressPercentLabel.textContent = "0%";
+        progressBytesLabel.textContent = `0.0 MB / ${(currentFile.size / (1024 * 1024)).toFixed(1)} MB`;
+        
+        startStatusPhraseRotation();
+
+        // Comprobar si el servidor local está activo
+        let isLocalServerOnline = false;
+        try {
+          const check = await fetch(BACKEND_URL + "/api/health", { cache: "no-store" });
+          if (check.ok) isLocalServerOnline = true;
+        } catch (e) {}
+
+        if (isLocalServerOnline) {
+          processWithServer();
+        } else {
+          processWithBrowserFallback();
+        }
+      });
+
+      function processWithServer() {
+        const xhr = new XMLHttpRequest();
+        currentXhr = xhr;
+        const formData = new FormData();
+        formData.append("file", currentFile);
+
+        xhr.upload.addEventListener("progress", (evt) => {
+          if (evt.lengthComputable) {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            const loadedMB = (evt.loaded / (1024 * 1024)).toFixed(1);
+            const totalMB = (evt.total / (1024 * 1024)).toFixed(1);
+            const visualPct = Math.round(pct * 0.4);
+            progressFillBar.style.width = visualPct + "%";
+            progressPercentLabel.textContent = visualPct + "%";
+            progressBytesLabel.textContent = `${loadedMB} MB / ${totalMB} MB`;
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          currentXhr = null;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            currentTicketId = data.ticket_id;
+            pollServerJob(data.ticket_id);
+          } else {
+            processWithBrowserFallback();
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          currentXhr = null;
+          processWithBrowserFallback();
+        });
+
+        xhr.open("POST", BACKEND_URL + "/api/procesar");
+        xhr.send(formData);
+      }
+
+      function pollServerJob(ticketId) {
+        currentPollTimer = setInterval(async () => {
+          try {
+            const res = await fetch(`${BACKEND_URL}/api/status/${ticketId}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.progress) {
+                progressFillBar.style.width = data.progress + "%";
+                progressPercentLabel.textContent = data.progress + "%";
+              }
+
+              if (data.status === "completado") {
+                clearInterval(currentPollTimer);
+                currentPollTimer = null;
+                currentTicketId = null;
+                stopStatusPhraseRotation("¡Video ensamblado con éxito!");
+                processedDownloadUrl = `${BACKEND_URL}/api/descargar/${ticketId}.mp4`;
+                showFinishedResult(processedDownloadUrl, true);
+              } else if (data.status === "error") {
+                clearInterval(currentPollTimer);
+                currentPollTimer = null;
+                currentTicketId = null;
+                stopStatusPhraseRotation();
+                alert("Error en procesamiento: " + (data.error || "Desconocido"));
+                processWithBrowserFallback();
+              }
+            }
+          } catch (e) {
+            clearInterval(currentPollTimer);
+            currentPollTimer = null;
+            processWithBrowserFallback();
+          }
+        }, 1500);
+      }
+
+      function processWithBrowserFallback() {
+        let p = 15;
+        const sim = setInterval(() => {
+          p += 18;
+          if (p <= 100) {
+            progressFillBar.style.width = p + "%";
+            progressPercentLabel.textContent = p + "%";
+          } else {
+            clearInterval(sim);
+            stopStatusPhraseRotation("¡Video listo para reproducir!");
+            processedDownloadUrl = currentFileUrl;
+            showFinishedResult(currentFileUrl, false);
+          }
+        }, 400);
+      }
+
+      // 5. MOSTRAR RESULTADO (FORMATO VERTICAL NATIVO 9:16)
+      function showFinishedResult(videoUrl, isServerRendered) {
+        viewProgress.style.display = "none";
+        viewResult.style.display = "block";
+
+        finalVideoPlayer.pause();
+        finalVideoPlayer.src = videoUrl;
+        finalVideoPlayer.currentTime = 0;
+        finalVideoPlayer.load();
+        // El video queda en pausa para que el usuario presione reproducir manualmente
+      }
+
+      // 6. GENERADOR DE NOMBRE DE ARCHIVO CON FECHA EXACTA
+      const MESES_ES = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      ];
+
+      function getDatedFilename() {
+        const now = new Date();
+        const day = now.getDate();
+        const month = MESES_ES[now.getMonth()];
+        const year = now.getFullYear();
+        return `${day}_de_${month}_de_${year}.mp4`;
+      }
+
+      // 7. DESCARGAR VIDEO CON FECHA EXACTA EN FORMATO MP4
+      btnDownloadFile.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const filename = getDatedFilename();
+
+        try {
+          // Descargar como Blob para forzar el nombre exacto con .mp4 en cualquier navegador
+          const res = await fetch(processedDownloadUrl);
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(new Blob([blob], { type: "video/mp4" }));
+
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+          }, 2000);
+        } catch (err) {
+          // Fallback descarga directa
+          const a = document.createElement("a");
+          a.href = processedDownloadUrl;
+          a.download = filename;
+          a.click();
+        }
+      });
+
+      // 8. COMPARTIR EN WHATSAPP CON ARCHIVO TITULADO POR FECHA
+      btnShareWhatsapp.addEventListener("click", async () => {
+        const filename = getDatedFilename();
+        const readableDate = filename.replace(".mp4", "").replace(/_/g, " ");
+
+        if (navigator.canShare && processedDownloadUrl) {
+          try {
+            const res = await fetch(processedDownloadUrl);
+            const blob = await res.blob();
+            const file = new File([blob], filename, { type: "video/mp4" });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: "90 Segundos con Marino Alvarado",
+                text: `Video listo de 90 Segundos con Marino Alvarado — ${readableDate}`
+              });
+              return;
+            }
+          } catch (e) {
+            console.warn("navigator.share no soportado para archivos:", e);
+          }
+        }
+        const text = encodeURIComponent(`¡Hola! Aquí está el video listo (${readableDate}) de 90 Segundos con Marino Alvarado para La TV Calle.`);
+        window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+      });
+
+      // 8. PROCESAR OTRO VIDEO
+      btnProcessAnother.addEventListener("click", () => {
+        currentFile = null;
+        currentFileUrl = "";
+        processedDownloadUrl = "";
+        fileInput.value = "";
+        clipLoadedCard.style.display = "none";
+        dropzone.style.display = "flex";
+        btnProcessAction.disabled = true;
+
+        viewForm.style.display = "block";
+        viewProgress.style.display = "none";
+        viewResult.style.display = "none";
+        finalVideoPlayer.pause();
+        finalVideoPlayer.src = "";
+      });
+
+    })();
+  </script>
+</body>
+</html>

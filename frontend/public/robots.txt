@@ -1,0 +1,5 @@
+# Robots.txt - Marino Editor 90 Segundos DDHH
+User-agent: *
+Allow: /
+
+Sitemap: https://marino-editor.vercel.app/sitemap.xml
