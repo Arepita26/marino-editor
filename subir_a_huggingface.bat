@@ -5,14 +5,11 @@ echo  🚀 Marino Editor - Despliegue a Hugging Face Spaces
 echo ========================================================
 echo.
 
+set DEFAULT_USER=Arepita26
 set SPACE_NAME=marino-editor-api
-set /p HF_USER="Introduce tu usuario de Hugging Face (ej. erickrosas): "
 
-if "%HF_USER%"=="" (
-    echo [ERROR] Debes introducir un usuario valido de Hugging Face.
-    pause
-    exit /b 1
-)
+set /p HF_USER="Introduce tu usuario de Hugging Face [%DEFAULT_USER%]: "
+if "%HF_USER%"=="" set HF_USER=%DEFAULT_USER%
 
 echo.
 echo Conectando con https://huggingface.co/spaces/%HF_USER%/%SPACE_NAME% ...
@@ -33,7 +30,7 @@ if %ERRORLEVEL% equ 0 (
 ) else (
     echo.
     echo [AVISO] Si es la primera vez que subes, asegurate de haber creado
-    echo el Space en https://huggingface.co/new-space con SDK Docker (Blank).
+    echo el Space en https://huggingface.co/new-space con SDK Gradio (Blank).
 )
 
 echo.

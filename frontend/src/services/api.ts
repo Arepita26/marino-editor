@@ -1,7 +1,7 @@
 import { ProcessingTicket } from "../types";
 
 // Permite cambiar la URL del backend de Hugging Face desde localStorage o variable de entorno
-const DEFAULT_API_URL = import.meta.env?.VITE_API_URL || "https://erickrosas-marino-editor-api.hf.space";
+const DEFAULT_API_URL = import.meta.env?.VITE_API_URL || "https://arepita26-marino-editor-api.hf.space";
 
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
