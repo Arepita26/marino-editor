@@ -11,6 +11,16 @@ import gradio as gr
 from app.routes.health import router as health_router
 from app.routes.video import router as video_router
 
+# Satisfacer validador de Hugging Face ZeroGPU
+try:
+    import spaces
+    @spaces.GPU(duration=10)
+    def gpu_warmup():
+        return "ZeroGPU Ready"
+except Exception:
+    def gpu_warmup():
+        return "Ready"
+
 with gr.Blocks(title="Marino Editor API — 90 Segundos DDHH") as demo:
     gr.Markdown("# 🎬 Marino Editor API")
     gr.Markdown("**Servicio backend de renderizado de video vertical para La TV Calle y DDHH.**")
