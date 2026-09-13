@@ -235,6 +235,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path.startswith("/gradio_api/v1"):
+            path = path[len("/gradio_api/v1"):]
 
         # API Endpoints
         if path == "/api/health":
@@ -349,7 +351,12 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        if self.path == "/api/procesar":
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        if path.startswith("/gradio_api/v1"):
+            path = path[len("/gradio_api/v1"):]
+
+        if path == "/api/procesar":
             content_type = self.headers.get("Content-Type", "")
             content_length = int(self.headers.get("Content-Length", 0))
 
@@ -412,8 +419,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             }).encode("utf-8"))
             return
 
-        if self.path.startswith("/api/cancelar/"):
-            ticket_id = self.path.replace("/api/cancelar/", "").strip()
+        if path.startswith("/api/cancelar/"):
+            ticket_id = path.replace("/api/cancelar/", "").strip()
             task = TASKS.get(ticket_id)
             if task:
                 proc = task.get("proc")

@@ -45,8 +45,12 @@ demo.app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Disposition", "Content-Length"],
 )
+# Registrar routers tanto en la raíz como bajo el prefijo /gradio_api/v1
+# (Hugging Face Spaces con Gradio redirige todo el tráfico externo /gradio_api/* directamente a Uvicorn/FastAPI)
 demo.app.include_router(health_router)
 demo.app.include_router(video_router)
+demo.app.include_router(health_router, prefix="/gradio_api/v1")
+demo.app.include_router(video_router, prefix="/gradio_api/v1")
 
 if __name__ == "__main__":
     demo.launch()
