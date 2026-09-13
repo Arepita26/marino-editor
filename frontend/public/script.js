@@ -1,6 +1,6 @@
 // ==========================================================================
 // MARINO EDITOR — SUITE DE VIDEO AUTOMATIZADA
-// Versión: 2.0.0 (Mobile Native Touch & Anti-Cache)
+// Versión: 2.1.0 (Fix Definitivo Selección Móvil & Despacho Táctil)
 // ==========================================================================
 
 // 1. AUTOLIMPIEZA DE SERVICE WORKERS ANTERIORES Y CACHÉ RESIDUAL
@@ -54,6 +54,7 @@ if ('caches' in window) {
   const videoInput = document.getElementById("videoInput") || document.getElementById("file-input-video");
   const fileNameBadge = document.getElementById("selectedFileName");
   const dropzoneContainer = document.getElementById("dropzoneContainer") || document.getElementById("dropzone-box");
+  const dropzonePrimaryText = document.getElementById("dropzonePrimaryText") || document.querySelector(".primary-text");
   const processBtn = document.getElementById("btnProcesar") || document.getElementById("processButton") || document.getElementById("btn-process-action");
 
   const progressFillBar = document.getElementById("progress-fill-bar");
@@ -86,48 +87,75 @@ if ('caches' in window) {
     try { localStorage.setItem("marino_backend_url", BACKEND_URL); } catch (e) {}
   }
 
-  // 4. LÓGICA DE SELECCIÓN TÁCTIL NATIVA & DROPZONE
+  // 4. LÓGICA DE SELECCIÓN DE ARCHIVOS
+  // ATENCIÓN: NUNCA agregar listener 'click' con videoInput.value = '' en móviles,
+  // porque iOS Safari y Chrome Android despachan un 'click' sintético al volver de la galería
+  // y borraban inmediatamente el archivo recién seleccionado.
+
+  function handleFileSelected(file) {
+    if (!file) return;
+
+    // Validación tolerante: si viene de accept="video/*" o tiene extensión/mime de video, o es genérico móvil
+    const isVideoMime = file.type && file.type.startsWith("video/");
+    const isVideoExt = /\.(mp4|mov|m4v|webm|mkv|3gp|avi|flv|wmv)$/i.test(file.name || "");
+    const isMobileGeneric = !file.type || file.type === "application/octet-stream" || file.type === "";
+
+    if (file.type && !isVideoMime && !isMobileGeneric && !isVideoExt) {
+      alert("Por favor selecciona un archivo de video válido (.mp4 o .mov).");
+      if (videoInput) videoInput.value = "";
+      return;
+    }
+
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > 500) {
+      alert(`El video pesa ${sizeMB.toFixed(1)} MB. El límite máximo es de 500 MB.`);
+      if (videoInput) videoInput.value = "";
+      return;
+    }
+
+    currentFile = file;
+
+    // Actualizar badge visual con el nombre y tamaño
+    if (fileNameBadge) {
+      const displayName = file.name || "video_seleccionado.mp4";
+      fileNameBadge.textContent = `Archivo: ${displayName} (${sizeMB.toFixed(1)} MB)`;
+      fileNameBadge.style.display = "inline-block";
+    }
+
+    if (dropzonePrimaryText) {
+      dropzonePrimaryText.textContent = "¡Video seleccionado! Toca abajo para procesar";
+    }
+
+    if (dropzoneContainer) {
+      dropzoneContainer.style.borderColor = "#0066FF";
+      dropzoneContainer.style.background = "rgba(0, 102, 255, 0.1)";
+    }
+
+    // Habilitar botón de procesar con estilo activo
+    if (processBtn) {
+      processBtn.disabled = false;
+      processBtn.style.opacity = "1";
+      processBtn.style.cursor = "pointer";
+    }
+
+    // Vibración de confirmación en móviles
+    if (navigator.vibrate) {
+      try { navigator.vibrate([40, 30, 40]); } catch (err) {}
+    }
+  }
+
   if (videoInput) {
-    // Rescate táctil: limpiar buffer al tocar para permitir re-selección inmediata
-    videoInput.addEventListener("click", () => {
-      videoInput.value = "";
+    videoInput.addEventListener("change", function (e) {
+      const files = (e.target && e.target.files) || (videoInput && videoInput.files);
+      if (files && files.length > 0) {
+        handleFileSelected(files[0]);
+      }
     });
 
-    videoInput.addEventListener("change", function (e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-
-      // Validación tolerante de formatos móviles: tipo MIME o extensión de archivo
-      const isVideoMime = file.type && file.type.startsWith("video/");
-      const isVideoExt = /\.(mp4|mov|m4v|webm|mkv|3gp|avi)$/i.test(file.name || "");
-      const isMobileGeneric = !file.type || file.type === "application/octet-stream";
-
-      if (!isVideoMime && !isVideoExt && !isMobileGeneric) {
-        alert("Por favor selecciona un archivo de video válido (.mp4 o .mov).");
-        videoInput.value = "";
-        return;
-      }
-
-      const sizeMB = file.size / (1024 * 1024);
-      if (sizeMB > 500) {
-        alert(`El video pesa ${sizeMB.toFixed(1)} MB. El límite máximo es de 500 MB.`);
-        videoInput.value = "";
-        return;
-      }
-
-      currentFile = file;
-
-      if (fileNameBadge) {
-        fileNameBadge.textContent = `Archivo: ${file.name} (${sizeMB.toFixed(1)} MB)`;
-        fileNameBadge.style.display = "inline-block";
-      }
-
-      if (processBtn) {
-        processBtn.disabled = false;
-      }
-
-      if (navigator.vibrate) {
-        try { navigator.vibrate(40); } catch (err) {}
+    videoInput.addEventListener("input", function (e) {
+      const files = (e.target && e.target.files) || (videoInput && videoInput.files);
+      if (files && files.length > 0) {
+        handleFileSelected(files[0]);
       }
     });
   }
@@ -144,31 +172,10 @@ if ('caches' in window) {
     dropzoneContainer.addEventListener("drop", (e) => {
       e.preventDefault();
       dropzoneContainer.classList.remove("drag-over");
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        const file = e.dataTransfer.files[0];
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        videoInput.files = dt.files;
-        videoInput.dispatchEvent(new Event("change", { bubbles: true }));
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileSelected(e.dataTransfer.files[0]);
       }
     });
-  }
-
-  // Permite cargar muestra automáticamente con ?sample=1
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("sample") === "1" || urlParams.get("test") === "1") {
-    fetch("/intro_marino.mp4")
-      .then(r => r.blob())
-      .then(blob => {
-        const sampleFile = new File([blob], "noticia_test.mp4", { type: "video/mp4" });
-        const dt = new DataTransfer();
-        dt.items.add(sampleFile);
-        if (videoInput) {
-          videoInput.files = dt.files;
-          videoInput.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-      })
-      .catch(e => console.log("Error cargando muestra:", e));
   }
 
   // 5. ROTADOR DINÁMICO DE FRASES DE PROGRESO
@@ -484,7 +491,17 @@ if ('caches' in window) {
         fileNameBadge.textContent = "";
         fileNameBadge.style.display = "none";
       }
-      if (processBtn) processBtn.disabled = true;
+      if (dropzonePrimaryText) {
+        dropzonePrimaryText.textContent = "Toca aquí para seleccionar el video";
+      }
+      if (dropzoneContainer) {
+        dropzoneContainer.style.borderColor = "";
+        dropzoneContainer.style.background = "";
+      }
+      if (processBtn) {
+        processBtn.disabled = true;
+        processBtn.style.opacity = "";
+      }
 
       if (viewForm) viewForm.style.display = "block";
       if (viewProgress) viewProgress.style.display = "none";

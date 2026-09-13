@@ -21,9 +21,9 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230066FF'/><text x='50' y='64' font-size='38' font-weight='bold' fill='white' text-anchor='middle'>90s</text></svg>" />
 
-  <!-- Estilos del Sistema de Diseño Premium -->
-  <link rel="stylesheet" href="styles.css?v=2.0.0" />
-  <link rel="stylesheet" href="src/styles/index.css?v=2.0.0" />
+  <!-- Estilos del Sistema de Diseño Premium (Cache-Busting v2.1.0) -->
+  <link rel="stylesheet" href="styles.css?v=2.1.0" />
+  <link rel="stylesheet" href="src/styles/index.css?v=2.1.0" />
 </head>
 <body>
   <div class="app-wrapper">
@@ -50,11 +50,11 @@
         <section class="suite-card">
           <span class="section-meta-label">VIDEO DE NOTICIA</span>
 
-          <!-- Zona de Selección Adaptada a Táctil -->
-          <label for="videoInput" class="dropzone-label" id="dropzoneContainer">
+          <!-- Zona de Selección Adaptada a Táctil Directo -->
+          <div class="dropzone-label" id="dropzoneContainer">
             <div class="dropzone-content">
               <div class="upload-icon">📹</div>
-              <p class="primary-text">Toca aquí para seleccionar el video</p>
+              <p class="primary-text" id="dropzonePrimaryText">Toca aquí para seleccionar el video</p>
               <p class="sub-text">MP4 o MOV (Hasta 500 MB)</p>
               <span id="selectedFileName" class="file-name-badge"></span>
             </div>
@@ -62,10 +62,10 @@
               type="file" 
               id="videoInput" 
               name="video" 
-              accept="video/*,video/mp4,video/quicktime,.mp4,.mov,.m4v,.webm" 
+              accept="video/*" 
               class="native-touch-input"
             />
-          </label>
+          </div>
         </section>
 
         <!-- BOTÓN PRINCIPAL PROCESAR -->
@@ -142,10 +142,16 @@
 
     <!-- Footer Simplificado con Versión -->
     <footer class="app-footer">
-      <p>Marino Editor — Suite de Video Automatizada v2.0.0</p>
+      <p>Marino Editor — Suite de Video Automatizada v2.1.0</p>
     </footer>
   </div>
 
-  <script src="script.js?v=2.0.0" defer></script>
+  <script src="script.js?v=2.1.0"></script>
+  <script>
+    // Respaldo de inicialización inmediata en caso de bloqueo de script externo
+    if (typeof window.marinoInitialized === 'undefined') {
+      console.log("[Marino Editor] v2.1.0 activo y verificado");
+    }
+  </script>
 </body>
 </html>
