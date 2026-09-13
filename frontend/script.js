@@ -1,6 +1,6 @@
 // ==========================================================================
 // MARINO EDITOR — SUITE DE VIDEO AUTOMATIZADA
-// Versión: 2.1.0 (Fix Definitivo Selección Móvil & Despacho Táctil)
+// Versión: 2.2.0 (Restauración Selector Clásico SAF y Rescate onfocus)
 // ==========================================================================
 
 // 1. AUTOLIMPIEZA DE SERVICE WORKERS ANTERIORES Y CACHÉ RESIDUAL
@@ -88,14 +88,10 @@ if ('caches' in window) {
   }
 
   // 4. LÓGICA DE SELECCIÓN DE ARCHIVOS
-  // ATENCIÓN: NUNCA agregar listener 'click' con videoInput.value = '' en móviles,
-  // porque iOS Safari y Chrome Android despachan un 'click' sintético al volver de la galería
-  // y borraban inmediatamente el archivo recién seleccionado.
-
   function handleFileSelected(file) {
     if (!file) return;
 
-    // Validación tolerante: si viene de accept="video/*" o tiene extensión/mime de video, o es genérico móvil
+    // Validación tolerante: si viene de selector o tiene extensión/mime de video, o es genérico móvil
     const isVideoMime = file.type && file.type.startsWith("video/");
     const isVideoExt = /\.(mp4|mov|m4v|webm|mkv|3gp|avi|flv|wmv)$/i.test(file.name || "");
     const isMobileGeneric = !file.type || file.type === "application/octet-stream" || file.type === "";
@@ -117,13 +113,13 @@ if ('caches' in window) {
 
     // Actualizar badge visual con el nombre y tamaño
     if (fileNameBadge) {
-      const displayName = file.name || "video_seleccionado.mp4";
+      const displayName = file.name || "video_noticia.mp4";
       fileNameBadge.textContent = `Archivo: ${displayName} (${sizeMB.toFixed(1)} MB)`;
       fileNameBadge.style.display = "inline-block";
     }
 
     if (dropzonePrimaryText) {
-      dropzonePrimaryText.textContent = "¡Video seleccionado! Toca abajo para procesar";
+      dropzonePrimaryText.textContent = "¡Video cargado! Toca abajo para procesar";
     }
 
     if (dropzoneContainer) {
@@ -144,6 +140,7 @@ if ('caches' in window) {
     }
   }
 
+  // Escuchas nativas de cambio en el input
   if (videoInput) {
     videoInput.addEventListener("change", function (e) {
       const files = (e.target && e.target.files) || (videoInput && videoInput.files);
@@ -159,6 +156,16 @@ if ('caches' in window) {
       }
     });
   }
+
+  // Mecanismo de rescate cuando el usuario vuelve de la app de Archivos / Recientes (Arquitectura TV Calle)
+  window.addEventListener("focus", () => {
+    setTimeout(() => {
+      const vInput = document.getElementById("videoInput") || videoInput;
+      if (vInput && vInput.files && vInput.files.length > 0) {
+        handleFileSelected(vInput.files[0]);
+      }
+    }, 300);
+  });
 
   // Soporte Desktop Drag & Drop
   if (dropzoneContainer && videoInput) {
