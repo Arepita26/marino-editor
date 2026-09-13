@@ -422,10 +422,11 @@ if ('caches' in window) {
     return `${day}_de_${month}_de_${year}.mp4`;
   }
 
-  // 10. DESCARGA SEGURA DE BLOB & WEB SHARE API (MÓVILES)
+  // 10. DESCARGA DIRECTA Y AUTOMÁTICA A LA GALERÍA (SIN MENÚ DE COMPARTIR)
   /**
-   * Descarga o comparte el video generado garantizando compatibilidad móvil sin archivo BB ni pantalla negra
-   * @param {string} videoUrl - URL de descarga provista por Hugging Face
+   * Ejecuta la descarga directa del video procesado (.mp4) al almacenamiento del teléfono (Galería / Descargas).
+   * Sin preguntas, sin menú de compartir, con el nombre exacto de la fecha.
+   * @param {string} videoUrl - URL de descarga provista por el servidor
    * @param {string} [customFileName] - Nombre del archivo con fecha
    */
   async function triggerSecureMobileDownload(videoUrl, customFileName) {
@@ -435,52 +436,25 @@ if ('caches' in window) {
 
     if (btnDownloadFile) {
       btnDownloadFile.disabled = true;
-      btnDownloadFile.textContent = "Preparando archivo para tu teléfono...";
+      btnDownloadFile.textContent = "Descargando video a tu teléfono...";
     }
 
     try {
-      // 1. Descargar el buffer completo como Blob para evitar bloqueos Cross-Origin
+      // 1. Descargar el buffer completo como Blob para forzar nombre exacto y evitar bloqueos en Android / iOS
       const response = await fetch(videoUrl);
       if (!response.ok) throw new Error("No se pudo obtener el video procesado del servidor.");
 
       const rawBlob = await response.blob();
       // Forzar estrictamente el tipo MIME a video/mp4
       const videoBlob = new Blob([rawBlob], { type: "video/mp4" });
-
-      // 2. Ruta A: Si el móvil soporta Web Share API con archivos, permitir compartir / guardar directo a Galería o WhatsApp
-      const file = new File([videoBlob], fileName, { type: "video/mp4" });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: "90 Segundos con Marino Alvarado",
-            text: "Cápsula informativa DDHH lista para difusión."
-          });
-          if (btnDownloadFile) {
-            btnDownloadFile.disabled = false;
-            btnDownloadFile.textContent = "¡Video compartido / guardado!";
-            setTimeout(() => { btnDownloadFile.textContent = originalBtnText; }, 3500);
-          }
-          return;
-        } catch (shareErr) {
-          if (shareErr.name === "AbortError") {
-            if (btnDownloadFile) {
-              btnDownloadFile.disabled = false;
-              btnDownloadFile.textContent = originalBtnText;
-            }
-            return;
-          }
-          console.warn("Fallo Web Share, usando descarga por ancla:", shareErr);
-        }
-      }
-
-      // 3. Ruta B: Fallback de descarga tradicional por ObjectURL protegido
       const blobUrl = URL.createObjectURL(videoBlob);
+
+      // 2. Disparar descarga directa inmediata sin menús emergentes de compartir
       const downloadAnchor = document.createElement("a");
       downloadAnchor.style.display = "none";
       downloadAnchor.href = blobUrl;
       downloadAnchor.setAttribute("download", fileName);
-      downloadAnchor.setAttribute("target", "_self"); // Evitar abrir reproductor en pestaña nueva
+      downloadAnchor.setAttribute("target", "_self");
 
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
@@ -488,27 +462,32 @@ if ('caches' in window) {
 
       if (btnDownloadFile) {
         btnDownloadFile.disabled = false;
-        btnDownloadFile.textContent = "¡Descarga iniciada! Revisa tus notificaciones";
+        btnDownloadFile.textContent = "¡Descarga iniciada! Guardando en tu galería...";
         setTimeout(() => { btnDownloadFile.textContent = originalBtnText; }, 4000);
       }
 
-      // 4. Retardo crítico: NO revocar el BlobURL antes de 60 segundos en móviles
+      // 3. Retardo de 120 segundos para no interrumpir al gestor de descargas de Android
       setTimeout(() => {
         URL.revokeObjectURL(blobUrl);
-      }, 60000);
+      }, 120000);
 
     } catch (err) {
-      console.error("Error al procesar descarga móvil:", err);
+      console.warn("Fallo descarga por blob, activando descarga directa del servidor:", err);
+      // Fallback directo sin abrir pestañas: navegación directa forzada con Content-Disposition
+      const directAnchor = document.createElement("a");
+      directAnchor.style.display = "none";
+      directAnchor.href = videoUrl;
+      directAnchor.setAttribute("download", fileName);
+      directAnchor.setAttribute("target", "_self");
+      document.body.appendChild(directAnchor);
+      directAnchor.click();
+      document.body.removeChild(directAnchor);
+
       if (btnDownloadFile) {
         btnDownloadFile.disabled = false;
-        btnDownloadFile.textContent = originalBtnText;
+        btnDownloadFile.textContent = "¡Descarga iniciada!";
+        setTimeout(() => { btnDownloadFile.textContent = originalBtnText; }, 3500);
       }
-      // Fallback de emergencia: enlace directo con target _blank
-      const emergencyLink = document.createElement("a");
-      emergencyLink.href = videoUrl;
-      emergencyLink.download = fileName;
-      emergencyLink.target = "_blank";
-      emergencyLink.click();
     }
   }
 

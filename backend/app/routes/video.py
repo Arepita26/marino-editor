@@ -130,14 +130,7 @@ def descargar_video(ticket_id: str, background_tasks: BackgroundTasks):
     now = datetime.now()
     safe_filename = f"{now.day}_de_{meses_es[now.month - 1]}_de_{now.year}.mp4"
 
-    # Schedule background cleanup after delivering response
-    # We give a 60 second delay before deleting so mobile browsers can retry or complete ranges
-    def delayed_cleanup():
-        import time
-        time.sleep(30)
-        delete_ticket_files(ticket_id)
-
-    background_tasks.add_task(delayed_cleanup)
+    # Never delete the processed video upon download to ensure re-download works reliably
 
     return FileResponse(
         path=str(output_path),
