@@ -211,15 +211,15 @@
       let currentFileUrl = "";
       let processedDownloadUrl = "";
       const INTRO_URL = "public/intro_marino.mp4";
-      const DEFAULT_HF_BACKEND = "https://arepita26-marino-editor-api.hf.space";
+      const DEFAULT_HF_BACKEND = "https://arepita26-marino-editor-api.hf.space/gradio_api/v1";
       const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
       const urlBackendParam = new URLSearchParams(window.location.search).get("backend");
       if (urlBackendParam) {
         try { localStorage.setItem("marino_backend_url", urlBackendParam); } catch(e) {}
       }
       let BACKEND_URL = localStorage.getItem("marino_backend_url") || (isLocalhost ? "http://127.0.0.1:7860" : DEFAULT_HF_BACKEND);
-      if (BACKEND_URL.includes("/gradio_api/v1")) {
-        BACKEND_URL = BACKEND_URL.replace("/gradio_api/v1", "");
+      if (BACKEND_URL.includes("arepita26-marino-editor-api.hf.space") && !BACKEND_URL.includes("/gradio_api/v1")) {
+        BACKEND_URL = DEFAULT_HF_BACKEND;
         try { localStorage.setItem("marino_backend_url", BACKEND_URL); } catch(e) {}
       }
 

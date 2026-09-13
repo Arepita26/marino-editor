@@ -78,17 +78,15 @@ async def procesar_video(
 
 
 @router.get("/status/{ticket_id}")
-def obtener_estado(ticket_id: str):
-    """
-    Poll endpoint called every 3-4 seconds by the client to query processing state.
-    """
+def consultar_estado(ticket_id: str):
+    """Returns the current progress, status, and metadata for a processing ticket."""
+    ticket_id = ticket_id.removesuffix(".mp4").strip()
     task = get_task_status(ticket_id)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Ticket '{ticket_id}' no encontrado o ha expirado.",
+            detail=f"Ticket '{ticket_id}' no encontrado o no existe.",
         )
-
     return {
         "ticket_id": ticket_id,
         "status": task["status"],
@@ -104,6 +102,7 @@ def descargar_video(ticket_id: str, background_tasks: BackgroundTasks):
     Delivers the assembled video as a downloadable MP4 stream and schedules
     immediate cleanup of ephemeral files on disk upon completion.
     """
+    ticket_id = ticket_id.removesuffix(".mp4").strip()
     task = get_task_status(ticket_id)
     if not task:
         raise HTTPException(
@@ -158,6 +157,7 @@ def cancelar_procesamiento(ticket_id: str):
     """
     Aborts any running FFmpeg process for the ticket and frees resources immediately.
     """
+    ticket_id = ticket_id.removesuffix(".mp4").strip()
     cancelled = cancel_task(ticket_id)
     if not cancelled:
         raise HTTPException(
