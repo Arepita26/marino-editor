@@ -1,6 +1,6 @@
 // ==========================================================================
 // MARINO EDITOR — SUITE DE VIDEO AUTOMATIZADA
-// Versión: 2.2.0 (Restauración Selector Clásico SAF y Rescate onfocus)
+// Versión: 2.3.0 (Descarga Segura Blob, Web Share API y Forzado v2.3.0)
 // ==========================================================================
 
 // 1. AUTOLIMPIEZA DE SERVICE WORKERS ANTERIORES Y CACHÉ RESIDUAL
@@ -52,7 +52,6 @@ if ('caches' in window) {
   const viewResult = document.getElementById("view-result");
 
   const videoInput = document.getElementById("videoInput") || document.getElementById("file-input-video");
-  const fileNameBadge = document.getElementById("selectedFileName");
   const dropzoneContainer = document.getElementById("dropzoneContainer") || document.getElementById("dropzone-box");
   const dropzonePrimaryText = document.getElementById("dropzonePrimaryText") || document.querySelector(".primary-text");
   const processBtn = document.getElementById("btnProcesar") || document.getElementById("processButton") || document.getElementById("btn-process-action");
@@ -65,7 +64,6 @@ if ('caches' in window) {
 
   const finalVideoPlayer = document.getElementById("final-video-player");
   const btnDownloadFile = document.getElementById("btn-download-file");
-  const btnShareWhatsapp = document.getElementById("btn-share-whatsapp");
   const btnProcessAnother = document.getElementById("btn-process-another");
 
   let currentFile = null;
@@ -87,7 +85,7 @@ if ('caches' in window) {
     try { localStorage.setItem("marino_backend_url", BACKEND_URL); } catch (e) {}
   }
 
-  // 4. LÓGICA DE SELECCIÓN DE ARCHIVOS
+  // 4. LÓGICA DE SELECCIÓN DE ARCHIVOS (SAF ANDROID & IOS)
   function handleFileSelected(file) {
     if (!file) return;
 
@@ -111,13 +109,7 @@ if ('caches' in window) {
 
     currentFile = file;
 
-    // Actualizar badge visual con el nombre y tamaño
-    if (fileNameBadge) {
-      const displayName = file.name || "video_noticia.mp4";
-      fileNameBadge.textContent = `Archivo: ${displayName} (${sizeMB.toFixed(1)} MB)`;
-      fileNameBadge.style.display = "inline-block";
-    }
-
+    // Actualización visual limpia (sin badge azul, solo texto de estado elegante)
     if (dropzonePrimaryText) {
       dropzonePrimaryText.textContent = "¡Video cargado! Toca abajo para procesar";
     }
@@ -430,74 +422,112 @@ if ('caches' in window) {
     return `${day}_de_${month}_de_${year}.mp4`;
   }
 
-  // 10. DESCARGAR VIDEO
-  if (btnDownloadFile) {
-    btnDownloadFile.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const filename = getDatedFilename();
+  // 10. DESCARGA SEGURA DE BLOB & WEB SHARE API (MÓVILES)
+  /**
+   * Descarga o comparte el video generado garantizando compatibilidad móvil sin archivo BB ni pantalla negra
+   * @param {string} videoUrl - URL de descarga provista por Hugging Face
+   * @param {string} [customFileName] - Nombre del archivo con fecha
+   */
+  async function triggerSecureMobileDownload(videoUrl, customFileName) {
+    const defaultName = getDatedFilename();
+    const fileName = customFileName || defaultName;
+    const originalBtnText = btnDownloadFile ? btnDownloadFile.textContent : "Descargar Video";
 
-      try {
-        const res = await fetch(processedDownloadUrl);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(new Blob([blob], { type: "video/mp4" }));
+    if (btnDownloadFile) {
+      btnDownloadFile.disabled = true;
+      btnDownloadFile.textContent = "Preparando archivo para tu teléfono...";
+    }
 
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = blobUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(blobUrl);
-        }, 2000);
-      } catch (err) {
-        const a = document.createElement("a");
-        a.href = processedDownloadUrl;
-        a.download = filename;
-        a.click();
-      }
-    });
-  }
+    try {
+      // 1. Descargar el buffer completo como Blob para evitar bloqueos Cross-Origin
+      const response = await fetch(videoUrl);
+      if (!response.ok) throw new Error("No se pudo obtener el video procesado del servidor.");
 
-  // 11. COMPARTIR EN WHATSAPP
-  if (btnShareWhatsapp) {
-    btnShareWhatsapp.addEventListener("click", async () => {
-      const filename = getDatedFilename();
-      const readableDate = filename.replace(".mp4", "").replace(/_/g, " ");
+      const rawBlob = await response.blob();
+      // Forzar estrictamente el tipo MIME a video/mp4
+      const videoBlob = new Blob([rawBlob], { type: "video/mp4" });
 
-      if (navigator.canShare && processedDownloadUrl) {
+      // 2. Ruta A: Si el móvil soporta Web Share API con archivos, permitir compartir / guardar directo a Galería o WhatsApp
+      const file = new File([videoBlob], fileName, { type: "video/mp4" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-          const res = await fetch(processedDownloadUrl);
-          const blob = await res.blob();
-          const file = new File([blob], filename, { type: "video/mp4" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: "90 Segundos con Marino Alvarado",
-              text: `Video listo de 90 Segundos con Marino Alvarado — ${readableDate}`
-            });
+          await navigator.share({
+            files: [file],
+            title: "90 Segundos con Marino Alvarado",
+            text: "Cápsula informativa DDHH lista para difusión."
+          });
+          if (btnDownloadFile) {
+            btnDownloadFile.disabled = false;
+            btnDownloadFile.textContent = "¡Video compartido / guardado!";
+            setTimeout(() => { btnDownloadFile.textContent = originalBtnText; }, 3500);
+          }
+          return;
+        } catch (shareErr) {
+          if (shareErr.name === "AbortError") {
+            if (btnDownloadFile) {
+              btnDownloadFile.disabled = false;
+              btnDownloadFile.textContent = originalBtnText;
+            }
             return;
           }
-        } catch (e) {
-          console.warn("navigator.share no disponible para archivos:", e);
+          console.warn("Fallo Web Share, usando descarga por ancla:", shareErr);
         }
       }
-      const text = encodeURIComponent(`¡Hola! Aquí está el video listo (${readableDate}) de 90 Segundos con Marino Alvarado para La TV Calle.`);
-      window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+
+      // 3. Ruta B: Fallback de descarga tradicional por ObjectURL protegido
+      const blobUrl = URL.createObjectURL(videoBlob);
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.style.display = "none";
+      downloadAnchor.href = blobUrl;
+      downloadAnchor.setAttribute("download", fileName);
+      downloadAnchor.setAttribute("target", "_self"); // Evitar abrir reproductor en pestaña nueva
+
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      document.body.removeChild(downloadAnchor);
+
+      if (btnDownloadFile) {
+        btnDownloadFile.disabled = false;
+        btnDownloadFile.textContent = "¡Descarga iniciada! Revisa tus notificaciones";
+        setTimeout(() => { btnDownloadFile.textContent = originalBtnText; }, 4000);
+      }
+
+      // 4. Retardo crítico: NO revocar el BlobURL antes de 60 segundos en móviles
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 60000);
+
+    } catch (err) {
+      console.error("Error al procesar descarga móvil:", err);
+      if (btnDownloadFile) {
+        btnDownloadFile.disabled = false;
+        btnDownloadFile.textContent = originalBtnText;
+      }
+      // Fallback de emergencia: enlace directo con target _blank
+      const emergencyLink = document.createElement("a");
+      emergencyLink.href = videoUrl;
+      emergencyLink.download = fileName;
+      emergencyLink.target = "_blank";
+      emergencyLink.click();
+    }
+  }
+
+  // Vincular la descarga segura al botón principal
+  if (btnDownloadFile) {
+    btnDownloadFile.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (processedDownloadUrl) {
+        triggerSecureMobileDownload(processedDownloadUrl, getDatedFilename());
+      }
     });
   }
 
-  // 12. PROCESAR OTRO VIDEO
+  // 11. PROCESAR OTRO VIDEO
   if (btnProcessAnother) {
     btnProcessAnother.addEventListener("click", () => {
       currentFile = null;
       processedDownloadUrl = "";
       if (videoInput) videoInput.value = "";
-      if (fileNameBadge) {
-        fileNameBadge.textContent = "";
-        fileNameBadge.style.display = "none";
-      }
       if (dropzonePrimaryText) {
         dropzonePrimaryText.textContent = "Toca aquí para seleccionar el video";
       }

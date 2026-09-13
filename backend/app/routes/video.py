@@ -145,6 +145,7 @@ def descargar_video(ticket_id: str, background_tasks: BackgroundTasks):
         filename=safe_filename,
         headers={
             "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Accept-Ranges": "bytes",
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
             "Expires": "0",
