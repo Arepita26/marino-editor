@@ -4,7 +4,7 @@ import App from "./App";
 import "./styles/index.css";
 
 // Registro de Service Worker para actualizaciones forzadas inmediatas
-if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+if ("serviceWorker" in navigator && (import.meta as any).env?.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")
