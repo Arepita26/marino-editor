@@ -217,7 +217,11 @@
       if (urlBackendParam) {
         try { localStorage.setItem("marino_backend_url", urlBackendParam); } catch(e) {}
       }
-      const BACKEND_URL = localStorage.getItem("marino_backend_url") || (isLocalhost ? "http://127.0.0.1:7860" : DEFAULT_HF_BACKEND);
+      let BACKEND_URL = localStorage.getItem("marino_backend_url") || (isLocalhost ? "http://127.0.0.1:7860" : DEFAULT_HF_BACKEND);
+      if (BACKEND_URL.includes("/gradio_api/v1")) {
+        BACKEND_URL = BACKEND_URL.replace("/gradio_api/v1", "");
+        try { localStorage.setItem("marino_backend_url", BACKEND_URL); } catch(e) {}
+      }
 
       // 3. SELECCIÓN DE VIDEO
       dropzone.addEventListener("click", () => fileInput.click());
@@ -378,17 +382,32 @@
         
         startStatusPhraseRotation();
 
-        // Comprobar si el servidor local está activo
-        let isLocalServerOnline = false;
-        try {
-          const check = await fetch(BACKEND_URL + "/api/health", { cache: "no-store" });
-          if (check.ok) isLocalServerOnline = true;
-        } catch (e) {}
+        // Verificar conexión con el backend de renderizado (con reintentos si el servidor en HF está iniciando)
+        let isOnline = false;
+        for (let attempt = 1; attempt <= 4; attempt++) {
+          try {
+            updateProgressMessage(attempt > 1 ? `Conectando con el servidor en la nube (intento ${attempt}/4)...` : "Verificando disponibilidad del servidor de renderizado...");
+            const check = await fetch(BACKEND_URL + "/api/health", { cache: "no-store" });
+            if (check.ok) {
+              const data = await check.json();
+              if (data.status === "online") {
+                isOnline = true;
+                break;
+              }
+            }
+          } catch (e) {
+            console.warn("Intento de conexión al backend:", e);
+          }
+          if (attempt < 4) await new Promise((r) => setTimeout(r, 2000));
+        }
 
-        if (isLocalServerOnline) {
+        if (isOnline) {
           processWithServer();
         } else {
-          processWithBrowserFallback();
+          stopStatusPhraseRotation();
+          alert("No se pudo conectar con el servidor de renderizado de Marino (Hugging Face / Servidor Local). La intro oficial requiere el motor FFmpeg del servidor. Por favor espera unos segundos e intenta nuevamente mientras el servidor en la nube arranca.");
+          viewProgress.style.display = "none";
+          viewForm.style.display = "block";
         }
       });
 
@@ -417,13 +436,24 @@
             currentTicketId = data.ticket_id;
             pollServerJob(data.ticket_id);
           } else {
-            processWithBrowserFallback();
+            let errorMsg = `Error del servidor (${xhr.status}).`;
+            try {
+              const errData = JSON.parse(xhr.responseText);
+              if (errData.detail) errorMsg = errData.detail;
+            } catch(e) {}
+            stopStatusPhraseRotation();
+            alert(errorMsg);
+            viewProgress.style.display = "none";
+            viewForm.style.display = "block";
           }
         });
 
         xhr.addEventListener("error", () => {
           currentXhr = null;
-          processWithBrowserFallback();
+          stopStatusPhraseRotation();
+          alert("Error de conexión al enviar el video al servidor. Por favor verifica tu red e intenta nuevamente.");
+          viewProgress.style.display = "none";
+          viewForm.style.display = "block";
         });
 
         xhr.open("POST", BACKEND_URL + "/api/procesar");
@@ -431,10 +461,12 @@
       }
 
       function pollServerJob(ticketId) {
+        let consecutiveErrors = 0;
         currentPollTimer = setInterval(async () => {
           try {
             const res = await fetch(`${BACKEND_URL}/api/status/${ticketId}`);
             if (res.ok) {
+              consecutiveErrors = 0;
               const data = await res.json();
               if (data.progress) {
                 progressFillBar.style.width = data.progress + "%";
@@ -445,7 +477,7 @@
                 clearInterval(currentPollTimer);
                 currentPollTimer = null;
                 currentTicketId = null;
-                stopStatusPhraseRotation("¡Video ensamblado con éxito!");
+                stopStatusPhraseRotation("¡Video ensamblado con éxito con la intro de Marino!");
                 processedDownloadUrl = `${BACKEND_URL}/api/descargar/${ticketId}.mp4`;
                 showFinishedResult(processedDownloadUrl, true);
               } else if (data.status === "error") {
@@ -453,32 +485,33 @@
                 currentPollTimer = null;
                 currentTicketId = null;
                 stopStatusPhraseRotation();
-                alert("Error en procesamiento: " + (data.error || "Desconocido"));
-                processWithBrowserFallback();
+                alert("Error en el procesamiento del video: " + (data.error || "Desconocido"));
+                viewProgress.style.display = "none";
+                viewForm.style.display = "block";
+              }
+            } else {
+              consecutiveErrors++;
+              if (consecutiveErrors > 10) {
+                clearInterval(currentPollTimer);
+                currentPollTimer = null;
+                stopStatusPhraseRotation();
+                alert("Se perdió la comunicación con el servidor durante el procesamiento.");
+                viewProgress.style.display = "none";
+                viewForm.style.display = "block";
               }
             }
           } catch (e) {
-            clearInterval(currentPollTimer);
-            currentPollTimer = null;
-            processWithBrowserFallback();
+            consecutiveErrors++;
+            if (consecutiveErrors > 10) {
+              clearInterval(currentPollTimer);
+              currentPollTimer = null;
+              stopStatusPhraseRotation();
+              alert("Error de conexión mientras se procesaba el video.");
+              viewProgress.style.display = "none";
+              viewForm.style.display = "block";
+            }
           }
         }, 1500);
-      }
-
-      function processWithBrowserFallback() {
-        let p = 15;
-        const sim = setInterval(() => {
-          p += 18;
-          if (p <= 100) {
-            progressFillBar.style.width = p + "%";
-            progressPercentLabel.textContent = p + "%";
-          } else {
-            clearInterval(sim);
-            stopStatusPhraseRotation("¡Video listo para reproducir!");
-            processedDownloadUrl = currentFileUrl;
-            showFinishedResult(currentFileUrl, false);
-          }
-        }, 400);
       }
 
       // 5. MOSTRAR RESULTADO (FORMATO VERTICAL NATIVO 9:16)
