@@ -49,16 +49,14 @@
         <section class="suite-card">
           <span class="section-meta-label">VIDEO DE NOTICIA</span>
 
-          <!-- Input oculto para cámara o galería -->
-          <input
-            type="file"
-            id="file-input-video"
-            accept="video/*"
-            style="display: none;"
-          />
-
-          <!-- Zona Dropzone con textos solicitados -->
-          <div class="dropzone-container" id="dropzone-box" role="button" tabindex="0">
+          <!-- Zona Dropzone nativa compatible 100% con móviles y galería -->
+          <label for="file-input-video" class="dropzone-container" id="dropzone-box">
+            <input
+              type="file"
+              id="file-input-video"
+              accept="video/mp4,video/quicktime,video/*,.mp4,.mov,.m4v,.webm"
+              class="mobile-file-input"
+            />
             <div class="dropzone-icon-box">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect width="18" height="18" x="3" y="3" rx="3" />
@@ -69,7 +67,7 @@
             </div>
             <div class="dropzone-title">Toca para abrir la galería</div>
             <div class="dropzone-subtitle">Formatos MP4 o MOV — hasta 500 MB</div>
-          </div>
+          </label>
 
           <!-- Ficha de clip seleccionado -->
           <div class="loaded-clip-card" id="clip-loaded-card" style="display: none;">
@@ -224,7 +222,9 @@
       }
 
       // 3. SELECCIÓN DE VIDEO
-      dropzone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("click", () => {
+        fileInput.value = "";
+      });
 
       dropzone.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -250,31 +250,52 @@
       });
 
       function handleFile(file) {
-        if (!file.type.startsWith("video/") && !file.name.match(/\.(mp4|mov|m4v|webm|avi|mkv)$/i)) {
-          alert("Por favor selecciona un archivo de video válido (MP4, MOV, M4V, etc.)");
+        if (!file) return;
+
+        // Validación permisiva y tolerante para teléfonos móviles (iOS/Android suelen enviar mime genérico)
+        const isVideoMime = file.type && file.type.startsWith("video/");
+        const hasVideoExt = /\.(mp4|mov|m4v|webm|avi|mkv|3gp)$/i.test(file.name || "");
+        const isMobileGeneric = !file.type || file.type === "application/octet-stream";
+
+        if (!isVideoMime && !hasVideoExt && !isMobileGeneric) {
+          alert("Por favor selecciona un archivo de video válido (MP4, MOV, etc.)");
+          fileInput.value = "";
           return;
         }
 
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 500) {
           alert(`El video pesa ${sizeMB.toFixed(1)} MB. El límite máximo permitido es de 500 MB.`);
+          fileInput.value = "";
           return;
         }
 
         currentFile = file;
-        currentFileUrl = URL.createObjectURL(file);
+        try {
+          if (currentFileUrl) URL.revokeObjectURL(currentFileUrl);
+          currentFileUrl = URL.createObjectURL(file);
+        } catch(e) {}
 
-        clipFilenameText.textContent = file.name;
+        clipFilenameText.textContent = file.name || "video_noticia.mp4";
         clipSizeTag.textContent = sizeMB.toFixed(1) + " MB";
 
         dropzone.style.display = "none";
         clipLoadedCard.style.display = "flex";
         btnProcessAction.disabled = false;
+
+        if (navigator.vibrate) {
+          try { navigator.vibrate(40); } catch(e) {}
+        }
       }
 
-      btnRemoveClip.addEventListener("click", () => {
+      btnRemoveClip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
         currentFile = null;
-        currentFileUrl = "";
+        if (currentFileUrl) {
+          try { URL.revokeObjectURL(currentFileUrl); } catch(e) {}
+          currentFileUrl = "";
+        }
         fileInput.value = "";
         clipLoadedCard.style.display = "none";
         dropzone.style.display = "flex";

@@ -1,15 +1,13 @@
 import sys
 import os
+import time
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import gradio as gr
-import uvicorn
 from app.routes.health import router as health_router
 from app.routes.video import router as video_router
 
@@ -23,24 +21,6 @@ except Exception:
     def gpu_warmup():
         return "Ready"
 
-# Aplicación FastAPI principal
-app = FastAPI(title="Marino Editor API — 90 Segundos DDHH")
-
-# CORS abierto para frontend en Vercel o local
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-    expose_headers=["Content-Disposition", "Content-Length"],
-)
-
-# Registrar routers de API directamente en la raíz (/api/health, /api/procesar, etc.)
-app.include_router(health_router)
-app.include_router(video_router)
-
-# Gradio Blocks informativo montado en /gradio
 with gr.Blocks(title="Marino Editor API — 90 Segundos DDHH") as demo:
     gr.Markdown("# 🎬 Marino Editor API")
     gr.Markdown("**Servicio backend de renderizado de video vertical para La TV Calle y DDHH.**")
@@ -56,9 +36,19 @@ with gr.Blocks(title="Marino Editor API — 90 Segundos DDHH") as demo:
       - `POST /api/cancelar/{ticket_id}`
     """)
 
-# Montar Gradio dentro de FastAPI en la subruta /gradio
-app = gr.mount_gradio_app(app, demo, path="/gradio")
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    demo.launch(strict_cors=False, prevent_thread_lock=True)
+    
+    target_app = getattr(demo, "server_app", getattr(demo, "app", None))
+    if target_app:
+        target_app.include_router(health_router)
+        target_app.include_router(video_router)
+        target_app.include_router(health_router, prefix="/gradio_api/v1")
+        target_app.include_router(video_router, prefix="/gradio_api/v1")
+        print("[Marino Editor] Rutas registradas exitosamente en demo.server_app.")
+
+    try:
+        demo.block_thread()
+    except Exception:
+        while True:
+            time.sleep(3600)
