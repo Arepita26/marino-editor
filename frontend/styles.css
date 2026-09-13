@@ -1,0 +1,81 @@
+@import url("./src/styles/index.css");
+
+/* ==========================================================================
+   MARINO EDITOR - ESTILOS TÁCTILES NATIVOS & SELECTOR MÓVIL
+   ========================================================================== */
+
+.dropzone-label {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  border: 2px dashed #00b4d8;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  overflow: hidden;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 28px 16px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .dropzone-label {
+  border-color: #0077b6;
+  background: #f8fafc;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.upload-icon {
+  font-size: 36px;
+  margin-bottom: 4px;
+}
+
+.primary-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+  margin: 0;
+}
+
+.sub-text {
+  font-size: 13px;
+  color: var(--text-secondary, #a1a1aa);
+  margin: 0;
+}
+
+/* El input cubre físicamente toda el área sin estar en display: none */
+.native-touch-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+  display: block !important;
+  font-size: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.file-name-badge {
+  display: none;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #00b4d8;
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  word-break: break-all;
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.35);
+}

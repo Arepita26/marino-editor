@@ -220,26 +220,58 @@ body {
   display: block;
 }
 
-/* Dropzone */
-.dropzone-container {
+/* Dropzone Adaptado a Táctil Nativo */
+.dropzone-label, .dropzone-container {
   position: relative;
-  overflow: hidden;
-  border: 2px dashed var(--border-dropzone);
-  background-color: var(--bg-dropzone);
-  border-radius: var(--radius-md);
-  padding: 44px 24px;
-  text-align: center;
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  border: 2px dashed #00b4d8;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
+  overflow: hidden;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 32px 16px;
   transition: all var(--transition-fast);
+}
+
+[data-theme="light"] .dropzone-label,
+[data-theme="light"] .dropzone-container {
+  border-color: #0077b6;
+  background: #f8fafc;
+}
+
+.dropzone-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
+  pointer-events: none;
 }
 
-/* Input de archivo transparente que cubre todo el dropzone en móviles */
-.mobile-file-input {
+.upload-icon {
+  font-size: 36px;
+  margin-bottom: 4px;
+}
+
+.primary-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sub-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* El input cubre físicamente toda el área sin estar en display: none */
+.native-touch-input, .mobile-file-input {
   position: absolute;
   top: 0;
   left: 0;
@@ -248,18 +280,34 @@ body {
   opacity: 0;
   cursor: pointer;
   z-index: 10;
+  display: block !important;
   font-size: 0;
   -webkit-tap-highlight-color: transparent;
 }
 
+.file-name-badge {
+  display: none;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #00b4d8;
+  color: #ffffff;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  word-break: break-all;
+  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.35);
+}
+
+.dropzone-label:hover, .dropzone-label.drag-over,
 .dropzone-container:hover, .dropzone-container.drag-over {
-  border-color: var(--border-dropzone-hover);
+  border-color: #0052CC;
   background-color: var(--bg-card-secondary);
 }
 
+[data-theme="light"] .dropzone-label,
 [data-theme="light"] .dropzone-container {
   background-color: #F8FAFC;
-  border-color: #94A3B8;
+  border-color: #0066FF;
 }
 
 [data-theme="light"] .dropzone-container:hover, 
