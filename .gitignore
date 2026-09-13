@@ -38,6 +38,7 @@ frontend/node_modules/
 backend/temp_processing/*
 !backend/temp_processing/.gitkeep
 *.log
+hf_space/
 
 # Entornos y secretos
 .env
